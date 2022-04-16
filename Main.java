@@ -1,40 +1,155 @@
 import java.util.*;
 
+
 public class Main {
-    public static void main (String [] args)
-    {
 
-        Deque<Person> allPeople = new ArrayDeque<>();
+    static ArrayList<Person> waitLine = new ArrayList<>();
+    static ArrayList<Person> stall = new ArrayList<>();
+    static int idCount = 0;
+    static int clock = 1;
+    static int otherStall;
+    static String genderString;
+    static int departureIndex = 0;
+    static int counter;
+
+    static int generateGender() {
+        Random r = new Random();
+        return r.nextInt(2);
+    }
+
+    static Person generatePerson() {
+        // Generate ID
+        idCount += 1;
+
+        // Generate Gender
+        int gender = generateGender();
+
+        // Generate Time
+        Random rTime = new Random();
+        int time = rTime.nextInt(8 - 3 + 1) + 3;
+
+        return new Person(idCount, gender, time);
+    }
+
+    static void generateLine(int numberOfPeople) {
+        for (int i = 0; i < numberOfPeople; i++) {
+            Person temp = generatePerson();
+
+            if (temp.getGender() == 0) {
+                genderString = "M";
+            } else {
+                genderString = "F";
+            }
+
+            System.out.printf("@t= %s; Person %s (%s) arrives\n", clock, Integer.toString(temp.getId()), genderString);
+            waitLine.add(temp);
+        }
+    }
+
+    static void arrive(int clock, int index) {
+
+        counter = 0;
+
+        for (int i = 0; i < waitLine.size(); i++) {
+
+            if (index == 0) {
+                otherStall = 1;
+            } else {
+                otherStall = 0;
+            }
 
 
-        Person sean = new Person(1, 1, 12);
-        Person grace = new Person(2, 0, 2);
-        Person bob = new Person(3, 0, 10);
-        Person sean3 = new Person(4, 0, 7);
-        Person sean4 = new Person(5, 1, 1);
-        Person sean5 = new Person(6, 0, 3);
-        Person sean6 = new Person(7, 0, 2);
-        Person sean7 = new Person(8, 1, 6);
-        Person sean8 = new Person(9, 1, 9);
-        Person sean9 = new Person(10, 1, 1);
-        allPeople.add(sean);
-        allPeople.add(grace);
-        allPeople.add(bob);
-        allPeople.add(sean3);
-        allPeople.add(sean4);
-        allPeople.add(sean5);
-        allPeople.add(sean6);
-        allPeople.add(sean7);
-        allPeople.add(sean8);
-        allPeople.add(sean9);
+            if (waitLine.get(i) != null) {
 
+                if (waitLine.get(i).getGender() == stall.get(otherStall).getGender()) {
+                    stall.set(index, waitLine.get(i));
+                    counter = i;
 
+                    if (waitLine.get(i).getGender() == 0) {
+                        genderString = "M";
+                    } else {
+                        genderString = "F";
+                    }
 
-        //sean.Informational();
-        sean.BestArrivals(allPeople);
-        //sean.UseFacilities(allPeople);
-        //sean.Departures(allPeople);
-        //sean.Allmethods(allPeople);
+                    System.out.printf("@t= %s; Person %s (%s) has entered the facilities for %s \n", clock, waitLine.get(i).getId(), genderString, waitLine.get(i).getTime());
+                    break;
+                }
+            } else if (waitLine.get(i) == null) {
+                arrive(clock, index);
+            } else {
+                stall.set(index, null);
+            }
+        }
 
+        waitLine.remove(counter);
+    }
+
+    static void depart(int clock, int index) {
+        Person temp = stall.get(index);
+        System.out.printf("@t= %s, Person %s exits (departure # %s)\n", clock, temp.getId(), departureIndex);
+
+        // fill the stall
+        arrive(clock, index);
+
+        departureIndex++;
+
+    }
+
+    public static void main (String [] args) {
+
+        // generate wait line
+        generateLine(10);
+
+        // add fist person to stall
+        stall.add(waitLine.get(0));
+        if (stall.get(0).getGender() == 0) {
+            genderString = "M";
+        } else {
+            genderString = "F";
+        }
+        System.out.printf("@t= %s; Person %s (%s) has entered the facilities for %s \n", 0, waitLine.get(0).getId(), genderString, waitLine.get(0).getTime());
+        waitLine.remove(0);
+
+//
+        // add second person to stall
+        for (int i = 0; i < waitLine.size(); i++) {
+            if (stall.get(0).getGender() == waitLine.get(i).getGender()) {
+                stall.add(waitLine.get(i));
+
+                if (stall.get(1).getGender() == 0) {
+                    genderString = "M";
+                } else {
+                    genderString = "F";
+                }
+
+                System.out.printf("@t= %s; Person %s (%s) has entered the facilities for %s \n", 0, waitLine.get(i).getId(), genderString, waitLine.get(i).getTime());
+                waitLine.remove(i);
+                break;
+            }
+        }
+
+        do {
+
+            if (stall.get(1) != null ) {
+                if (stall.get(0).getTime() > 1) {
+                    stall.get(0).setTime(stall.get(0).getTime() - 1);
+                } else if (stall.get(0) != null) {
+                    depart(clock, 0);
+                } else {
+                    arrive(clock, 0);
+                }
+
+                if (stall.get(1).getTime() > 1) {
+                    stall.get(1).setTime(stall.get(1).getTime() - 1);
+                } else if (stall.get(1) != null) {
+                    depart(clock, 1);
+                } else {
+                    arrive(clock, 1);
+                }
+            }
+
+            clock++;
+
+        } while (waitLine.size() > 0);
     }
 }
