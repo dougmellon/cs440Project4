@@ -11,6 +11,8 @@ public class Main {
     static String genderString;
     static int departureIndex = 0;
     static int counter;
+    static int stall0Index = 0;
+    static int stall1Index = 0;
 
     static int generateGender() {
         Random r = new Random();
@@ -46,54 +48,66 @@ public class Main {
         }
     }
 
-    static void arrive(int clock, int index) {
+    static void arrival(int stallNumber, int clock) {
 
-        counter = 0;
+        String tempGender;
 
-        for (int i = 0; i < waitLine.size(); i++) {
+        if (stallNumber == 0) {
 
-            if (index == 0) {
-                otherStall = 1;
-            } else {
-                otherStall = 0;
-            }
-
-
-            if (waitLine.get(i) != null) {
-
-                if (waitLine.get(i).getGender() == stall.get(otherStall).getGender()) {
-                    stall.set(index, waitLine.get(i));
-                    counter = i;
+            for (int i = 0; i < waitLine.size(); i++) {
+                if (stall.get(1) == null || waitLine.get(i).getGender() == stall.get(1).getGender()) {
 
                     if (waitLine.get(i).getGender() == 0) {
-                        genderString = "M";
+                        tempGender = "m";
                     } else {
-                        genderString = "F";
+                        tempGender = "F";
                     }
 
-                    System.out.printf("@t= %s; Person %s (%s) has entered the facilities for %s \n", clock, waitLine.get(i).getId(), genderString, waitLine.get(i).getTime());
+                    System.out.printf("t= %s; Person %s (%s) enters the facilities for %s minutes\n", clock, waitLine.get(i).getId(), tempGender, waitLine.get(i).getTime());
+                    stall.set(stallNumber, waitLine.get(i));
+                    waitLine.remove(i);
                     break;
+                } else {
+                    stall.set(0, null);
                 }
-            } else if (waitLine.get(i) == null) {
-                arrive(clock, index);
-            } else {
-                stall.set(index, null);
+            }
+
+        } else if (stallNumber == 1){
+
+            for (int i = 0; i < waitLine.size(); i++) {
+                if (waitLine.get(i).getGender() == stall.get(0).getGender() || stall.get(0) == null) {
+
+                    if (waitLine.get(i).getGender() == 0) {
+                        tempGender = "m";
+                    } else {
+                        tempGender = "F";
+                    }
+
+                    System.out.printf("t= %s; Person %s (%s) enters the facilities for %s minutes\n", clock, waitLine.get(i).getId(), tempGender, waitLine.get(i).getTime());
+                    stall.set(stallNumber, waitLine.get(i));
+                    waitLine.remove(i);
+                    break;
+                } else {
+                    stall.set(1, null);
+                }
             }
         }
-
-        waitLine.remove(counter);
     }
 
-    static void depart(int clock, int index) {
-        Person temp = stall.get(index);
-        System.out.printf("@t= %s, Person %s exits (departure # %s)\n", clock, temp.getId(), departureIndex);
+    static void depart(int stallNumber, int clock) {
 
-        // fill the stall
-        arrive(clock, index);
+        String tempGender;
 
-        departureIndex++;
+        if (stall.get(stallNumber).getGender() == 0) {
+            tempGender = "m";
+        } else {
+            tempGender = "F";
+        }
 
+        System.out.printf("t= %s; Person %s (%s) exits\n", clock, stall.get(stallNumber).getId(), tempGender);
+        arrival(stallNumber, clock);
     }
+
 
     public static void main (String [] args) {
 
@@ -107,10 +121,10 @@ public class Main {
         } else {
             genderString = "F";
         }
+
         System.out.printf("@t= %s; Person %s (%s) has entered the facilities for %s \n", 0, waitLine.get(0).getId(), genderString, waitLine.get(0).getTime());
         waitLine.remove(0);
 
-//
         // add second person to stall
         for (int i = 0; i < waitLine.size(); i++) {
             if (stall.get(0).getGender() == waitLine.get(i).getGender()) {
@@ -128,28 +142,71 @@ public class Main {
             }
         }
 
-        do {
+        int clock = 1;
 
-            if (stall.get(1) != null ) {
-                if (stall.get(0).getTime() > 1) {
+        while (waitLine.size() > 0) {
+
+            // if the first stall is empty
+            if (stall.get(0) == null) {
+                arrival(0, clock);
+            }
+
+            // if the second stall is empty
+            if (stall.get(1) == null) {
+                arrival(1, clock);
+            }
+
+            // if the first stall is not empty
+            if (stall.get(0) != null) {
+
+                if (stall.get(0).getTime() == 1) {
+                    depart(0, clock);
+                } else {
                     stall.get(0).setTime(stall.get(0).getTime() - 1);
-                } else if (stall.get(0) != null) {
-                    depart(clock, 0);
-                } else {
-                    arrive(clock, 0);
                 }
+            }
 
-                if (stall.get(1).getTime() > 1) {
-                    stall.get(1).setTime(stall.get(1).getTime() - 1);
-                } else if (stall.get(1) != null) {
-                    depart(clock, 1);
+            // if the second stall is not empty
+            if (stall.get(1) != null) {
+
+                if (stall.get(1).getTime() == 1) {
+                    depart(1, clock);
                 } else {
-                    arrive(clock, 1);
+                    stall.get(1).setTime(stall.get(1).getTime() - 1);
                 }
             }
 
             clock++;
+        }
 
-        } while (waitLine.size() > 0);
+
+
+
+        while (stall.get(0) != null || stall.get(1) != null) {
+            // if the first stall is not empty
+            if (stall.get(0) != null) {
+
+                if (stall.get(0).getTime() == 1) {
+                    depart(0, clock);
+                    stall.set(0, null);
+                } else {
+                    stall.get(0).setTime(stall.get(0).getTime() - 1);
+                }
+            }
+
+            // if the second stall is not empty
+            if (stall.get(1) != null) {
+
+                if (stall.get(1).getTime() == 1) {
+                    depart(1, clock);
+                    stall.set(1, null);
+                } else {
+                    stall.get(1).setTime(stall.get(1).getTime() - 1);
+                }
+            }
+
+            clock++;
+        }
+
     }
 }
